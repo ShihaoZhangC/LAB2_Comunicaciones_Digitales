@@ -1,0 +1,69 @@
+% Parámetros comunes
+f0 = 1; 
+Ts = 1/(2*f0); 
+alpha_values = [0, 0.25, 0.75, 1]; 
+B_values = f0*(1 + alpha_values); 
+
+% Configuración de gráficos
+figure;
+
+% Grafíca respuesta en frecuencia
+subplot(2,1,1);
+hold on;
+
+for i = 1:length(alpha_values)
+    alpha = alpha_values(i);
+    B = B_values(i);
+    f_delta = alpha * f0;
+    f1 = f0 - f_delta;
+    
+    f = linspace(-2*B, 2*B, 1000);
+    He = zeros(size(f));
+    
+    for k = 1:length(f)
+        if abs(f(k)) <= f1
+            He(k) = 1;
+        elseif (abs(f(k)) > f1) && (abs(f(k)) <= B)
+            He(k) = 0.5*(1 + cos(pi*(abs(f(k))-f1)/(2*f_delta)));
+        else
+            He(k) = 0;
+        end
+    end
+    
+    plot(f, He, 'DisplayName', ['α = ' num2str(alpha)]);
+end
+
+title('Respuesta en Frecuencia del Filtro Coseno Alzado');
+xlabel('Frecuencia (Hz)');
+ylabel('Amplitud');
+legend show;
+grid on;
+hold off;
+
+% 2. Grafica respuesta al impulso 
+subplot(2,1,2);
+hold on;
+
+t = linspace(0, 10*Ts, 1000); % Solo valores t ≥ 0
+
+for i = 1:length(alpha_values)
+    alpha = alpha_values(i);
+    f_delta = alpha * f0;
+    
+    % Calcula respuesta al impulso
+    term1 = sin(2*pi*f0*t)./(2*pi*f0*t);
+    term2 = cos(2*pi*f_delta*t)./(1 - (4*f_delta*t).^2);
+    he = 2*f0 * term1 .* term2;
+    
+    % Maneja el caso t=0 
+    he(t==0) = 2*f0 * 1 * 1; % Límite cuando t→0
+    
+    plot(t, he, 'DisplayName', ['α = ' num2str(alpha)]);
+end
+
+title('Respuesta al Impulso del Filtro Coseno Alzado (t ≥ 0)');
+xlabel('Tiempo (s)');
+ylabel('Amplitud');
+legend show;
+grid on;
+hold off;
