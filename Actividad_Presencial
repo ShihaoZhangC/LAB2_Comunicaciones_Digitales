@@ -1,0 +1,52 @@
+%% Actividad Presencial: Diagrama de Ojo con Canal AWGN y NRZ-L
+% Parámetros para la modulación y canal
+N_bits = 104;                
+bits = randi([0,1], 1, N_bits);  
+% Mapear bits a niveles NRZ-L: 0 --> -1, 1 --> 1
+symbols = 2 * bits - 1;      
+
+% Factor de sobre-muestreo: cantidad de muestras por símbolo
+Os = 100;                  
+ts = Ts / Os;              
+t_symbol = (0:Os-1)*ts;    
+
+% Parámetro de ruido (SNR en dB)
+SNR = 20;
+
+% Preparar simulación para cada valor de α
+for idx = 1:length(alpha_values)
+    alpha = alpha_values(idx);
+    f_delta = alpha * f0;
+    
+    T_window = 8 * Ts;
+    t_resp = -T_window:ts:T_window;
+    
+    term1 = sin(2*pi*f0*t_resp) ./ (2*pi*f0*t_resp);
+    term1(t_resp==0) = 1;
+    
+    den = 1 - (4*f_delta*t_resp).^2;
+    term2 = zeros(size(t_resp));
+    tol = 1e-10;
+    ind_good = abs(den) > tol;
+    term2(ind_good) = cos(2*pi*f_delta*t_resp(ind_good)) ./ den(ind_good);
+    ind_bad = ~ind_good;
+    term2(ind_bad) = pi;  % asignación de un valor finito en puntos problemáticos
+    
+    h = 2*f0 * term1 .* term2;
+    
+
+    x = upsample(symbols, Os);
+
+    y = conv(x, h, 'same');
+    
+    y_noisy = awgn(y, SNR, 'measured');
+    
+    % Grafica el Diagrama de Ojo
+    figure;
+    eyediagram(y_noisy, 2*Os);
+    title(['Diagrama de Ojo - \alpha = ' num2str(alpha)], 'Interpreter','tex');
+    xlabel('Tiempo');
+    ylabel('Amplitud');
+    
+    fprintf('Diagrama de Ojo generado para α = %.2f con %d bits, SNR = %d dB, y factor de sobre-muestreo = %d.\n', alpha, N_bits, SNR, Os);
+end
